@@ -5,7 +5,7 @@ from PIL import Image, ImageTk
 import io
 import os
 import socket
-
+SEPARATOR = "<SEPARATOR>"
 ClientSocket = socket.socket()
 host = socket.gethostname()
 port = 9999
@@ -14,7 +14,7 @@ port = 9999
 try:
     ClientSocket.connect((host, port))
 except socket.error as e:
-    print(str(e))
+    print(e)
 
 address=[]
 def get_img_data(f, maxsize=(200, 200), first=False):
@@ -77,13 +77,28 @@ while True:
     # presses the OK button
     if event == "_BUTTON_SEND_":
         val=values["-MESSAGE-"] 
-        if val =="\n":
-            sg.popup('Error', 'Please fill the message box')
+        filename = values["-FILE_NAME-"]
+        if filename=='':
+            if val =="\n":
+                sg.popup('Error', 'Please fill the message box')
+            else:
+                try:
+                    msg = values["-MESSAGE-"]
+                    ClientSocket.sendall(str.encode(msg))
+                except socket.error as e1:
+                    sg.popup("connection error",e1)
         else:
-            msg = values["-MESSAGE-"]
-            ClientSocket.send(str.encode(msg))
-            respon=(ClientSocket.recv(1048476).decode("utf-8"))
-            print(respon)
+            File=open(filename,"rb")
+            data_img=File.read(1073741824)
+            File.close()
+            if val =="\n":
+                sg.popup('Error', 'Please fill the message box')
+            else:
+                try:
+                    msg = values["-MESSAGE-"]
+                    ClientSocket.sendall(f"{msg}{SEPARATOR}{data_img}".encode())
+                except socket.error as e1:
+                    sg.popup("connection error",e1)
         # ad.append((ClientSocket.recv(1048476)).decode("utf-8"))
     if event == "-FILE_NAME-":
         filename = values["-FILE_NAME-"]
